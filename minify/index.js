@@ -3,26 +3,26 @@ const path      = require('path');
 const fs        = require('fs');
 
 const logger   = {
-        info() {
-          console.log();
+        info(msg) {
+          console.log(msg);
         },
-        log() {
-          console.log();
+        log(msg) {
+          console.log(msg);
         },
       }// require('../../cli/src/utils/console').normal('minifier');
 ;
 const iaLogger = {
-        info() {
-          console.log();
+        info(msg) {
+          console.log(msg);
         },
-        await() {
-          console.log();
+        await(msg) {
+          console.log(msg);
         },
-        error() {
-          console.log();
+        error(msg) {
+          console.log(msg);
         },
-        success() {
-          console.log();
+        success(msg) {
+          console.log(msg);
         },
       }// require('../../cli/src/utils/console').interactive('minifier');
 ;
