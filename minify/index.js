@@ -82,7 +82,7 @@ const myMinify = async (settings, dir) => {
  * @type EFCModule
  */
 module.exports = {
-  name       : 'minifier',
+  name       : 'minify',
   description: 'Minify files before packaging them',
 
   config: {
