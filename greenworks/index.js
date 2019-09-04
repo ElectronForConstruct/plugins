@@ -48,7 +48,7 @@ module.exports = {
    */
 
   async onPreBuild(args, settings, tmpdir) {
-    const logger = this.Logger.normal('greenworks');
+    const logger = this.Logger.interactive('greenworks');
 
     const greenworksDir = path.join(tmpdir, 'greenworks');
     const greenworksLibsDir = path.join(greenworksDir, 'lib');
