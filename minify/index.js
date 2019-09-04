@@ -16,11 +16,11 @@ const recursiveReadDir = async dir => new Promise((resolve, reject) => {
  * @param dir
  * @return {Promise<boolean>}
  */
-const myMinify = async (settings, dir) => {
-  const Terser = require('terser');
-  const iaLogger = this.Logger.interactive();
+const myMinify = async (settings, dir, Logger) => {
+  const Terser   = require('terser');
+  const iaLogger = Logger.interactive('minify');
 
-  const { ignore } = settings.minifier;
+  const { ignore } = settings.minify;
 
   iaLogger.info('Minifying...');
 
@@ -72,7 +72,7 @@ module.exports = {
    * @return {Promise<boolean>}
    */
   async onPreBuild(args, settings, dir) {
-    const done = await myMinify(settings, dir);
+    const done = await myMinify(settings, dir, this.Logger);
     return done;
   },
 
