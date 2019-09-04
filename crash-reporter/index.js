@@ -1,5 +1,3 @@
-const log = require('../../cli/src/utils/console').normal('crash-reporter');
-
 /**
  * @type EFCModule
  */
@@ -8,9 +6,10 @@ module.exports = {
   description: 'Configure crash reporter',
 
   onPreBuild(args, settings) {
+    const logger = this.Logger.normal('crash-reporter');
     const crashReporter = settings['crash-reporter'];
     if (!crashReporter.enable) {
-      log.info('crash reporter is not enabled.');
+      logger.info('crash reporter is not enabled.');
       return;
     }
 
@@ -20,6 +19,7 @@ module.exports = {
   },
 
   async run() {
-    log.info('Please, see https://efc.armaldio.xyz/plugins/crash-reporter.html for information on how to configure this plugin');
+    const logger = this.Logger.normal('crash-reporter');
+    logger.info('Please, see https://efc.armaldio.xyz/plugins/crash-reporter.html for information on how to configure this plugin');
   },
 };

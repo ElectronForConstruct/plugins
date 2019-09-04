@@ -1,40 +1,36 @@
 const path = require('path');
-const Console = require('../../cli/src/utils/console');
-const prettyDisplayFolders = require('../../cli/src/utils/prettyFolder');
-
-const log = Console.normal('installer');
+const eb   = require('electron-builder/out/index');
 
 /**
  * @type EFCModule
  */
 module.exports = {
-  name: 'installer',
+  name       : 'installer',
   description: 'Generate installer',
-  config: {
+  config     : {
     appId: 'com.you.yourapp',
 
     asar: false,
 
     productName: 'YourAppName',
-    copyright: 'Copyright © 2018 You',
+    copyright  : 'Copyright © 2018 You',
     directories: {
       buildResources: 'build',
-      output: 'installers',
+      output        : 'installers',
     },
-    files: [
+    files      : [
       '!preview.exe',
       '!preview',
       '!node_modules/greenworks/!**',
       '!node_modules/app-builder-bin/!**',
       '!node_modules/app-builder-lib/!**',
     ],
-    publish: [],
+    publish    : [],
   },
 
   async run(args, settings) {
-    const { postBuild, preBuild, postInstaller } = require('../../cli/src/utils/hooks');
-    const setupDir = require('../../cli/src/utils/setupDir');
-    const eb = require('electron-builder/out/index');
+    const { postBuild, preBuild, postInstaller, setupDir, prettyDisplayFolders } = this.Utils;
+    const logger = this.Logger.normal('installer')
 
     const packOptions = settings.installer;
 
@@ -48,7 +44,7 @@ module.exports = {
     const tempDir = await setupDir(settings, zipFile, 'build');
 
     packOptions.afterPack = async (context) => {
-      await postBuild(this.modules, args, settings, [context.appOutDir]);
+      await postBuild(this.modules, args, settings, [ context.appOutDir ]);
     };
 
     packOptions.directories.app = tempDir;
@@ -71,12 +67,12 @@ module.exports = {
     try {
       const appPaths = await eb.build({ config: packOptions });
 
-      log.success('Files packed successfuly!');
+      logger.success('Files packed successfuly!');
       prettyDisplayFolders(appPaths.filter(p => !p.includes('blockmap')));
 
-      postInstaller(this.modules, args, settings, path.dirname(appPaths[0]));
+      postInstaller(this.modules, args, settings, path.dirname(appPaths[ 0 ]));
     } catch (e) {
-      log.log('There was an error building your project:', e);
+      logger.log('There was an error building your project:', e);
     }
   },
 };

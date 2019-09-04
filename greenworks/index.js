@@ -1,12 +1,10 @@
 const path = require('path');
 const nodeAbi = require('node-abi');
 const fs = require('fs');
-
-const log = require('../../cli/src/utils/console')
-  .interactive('greenworks');
+const got = require('got');
+const shelljs = require('shelljs');
 
 const request = async (url, json = false) => new Promise(async (resolve, reject) => {
-  const got = require('got');
   try {
     const { body } = await got(url, {
       headers: {
@@ -20,11 +18,10 @@ const request = async (url, json = false) => new Promise(async (resolve, reject)
   }
 });
 
-const downloadFile = async (url, mypath) => new Promise((resolve) => {
-  const got = require('got');
+const downloadFile = async (url, mypath, logger) => new Promise((resolve) => {
   const stream = got.stream(url);
   stream
-    .on('downloadProgress', progress => log.log(`${Math.round(progress.percent * 100)}%`))
+    .on('downloadProgress', progress => logger.log(`${Math.round(progress.percent * 100)}%`))
     .pipe(fs.createWriteStream(
       mypath,
     ))
@@ -51,32 +48,32 @@ module.exports = {
    */
 
   async onPreBuild(args, settings, tmpdir) {
-    const shelljs = require('shelljs');
+    const logger = this.Logger.normal('greenworks');
 
     const greenworksDir = path.join(tmpdir, 'greenworks');
     const greenworksLibsDir = path.join(greenworksDir, 'lib');
 
     if (!settings.greenworks) {
-      log.error('"greenworks" key not found. You must specify your greenworks settings under this key.');
+      logger.error('"greenworks" key not found. You must specify your greenworks settings under this key.');
       return false;
     }
 
     if (!settings.greenworks.sdkPath) {
-      log.error('Please specify a path to your steam sdk in the configuration file');
+      logger.error('Please specify a path to your steam sdk in the configuration file');
       return false;
     }
 
     const { sdkPath } = settings.greenworks;
 
     if (!fs.existsSync(sdkPath)) {
-      log.error(`${sdkPath} does not exist! Please, specify a valid path to your steam sdk.`);
+      logger.error(`${sdkPath} does not exist! Please, specify a valid path to your steam sdk.`);
       return false;
     }
 
     // -----------------------///
 
     // Create greenworks directory
-    log.info('Generating required folders');
+    logger.info('Generating required folders');
 
     if (!fs.existsSync(greenworksDir)) {
       shelljs.mkdir(greenworksDir);
@@ -87,13 +84,13 @@ module.exports = {
 
     // Generate steamId
     if (!settings.greenworks.steamId) {
-      log.error('Please specify a steam game id in the configuration file');
+      logger.error('Please specify a steam game id in the configuration file');
       return false;
     }
 
     const { steamId, localGreenworksPath, prebuildsVersion } = settings.greenworks;
 
-    log.info('Downloading greenworks');
+    logger.info('Downloading greenworks');
 
     const steamAppIdPath = path.join(greenworksDir, 'steam_appid.txt');
     fs.writeFileSync(steamAppIdPath, steamId, 'utf8');
@@ -103,7 +100,7 @@ module.exports = {
     const greenworksFileRemoteContent = await request('https://raw.githubusercontent.com/greenheartgames/greenworks/master/greenworks.js');
     fs.writeFileSync(greenworksjsPath, greenworksFileRemoteContent, 'utf8');
 
-    log.info('Copying files');
+    logger.info('Copying files');
     const toCopy = [
       path.join(sdkPath, 'redistributable_bin', 'linux64', 'libsteam_api.so'),
       path.join(sdkPath, 'redistributable_bin', 'osx32', 'libsteam_api.dylib'),
@@ -122,7 +119,7 @@ module.exports = {
           shelljs.cp(file, greenworksLibsDir);
         }
       } catch (e) {
-        log.error(`There was an error copying ${file}, are you sure steam sdk path is valid ?`);
+        logger.error(`There was an error copying ${file}, are you sure steam sdk path is valid ?`);
         return false;
       }
     }
@@ -130,7 +127,7 @@ module.exports = {
     if (localGreenworksPath) {
       const localLibPath = path.join(localGreenworksPath, 'node_modules', 'greenworks', 'lib');
       if (fs.existsSync(localLibPath)) {
-        log.info(`Using local build from ${localLibPath}`);
+        logger.info(`Using local build from ${localLibPath}`);
         const files = fs.readdirSync(localLibPath);
         files.forEach((file) => {
           if (path.extname(file) === '.node') {
@@ -138,7 +135,7 @@ module.exports = {
           }
         });
       } else {
-        log.error(`${localLibPath} can not be found!`);
+        logger.error(`${localLibPath} can not be found!`);
         return false;
       }
     } else {
@@ -146,13 +143,13 @@ module.exports = {
       const abi = nodeAbi.getAbi(version, 'electron');
 
       if (version[0] === '4' && abi === '64') {
-        log.error(`Electron version ${version} found - aborting due to known ABI issue
+        logger.error(`Electron version ${version} found - aborting due to known ABI issue
 More information about this issue can be found at https://github.com/lgeiger/node-abi/issues/54
 Please, avoid using electron from 4.0.0 to 4.0.3`);
         throw new Error('Invalid Electron version');
       }
 
-      log.info('Fetching prebuilds');
+      logger.info('Fetching prebuilds');
       let release = 'latest';
       if (prebuildsVersion) {
         release = `tags/v${prebuildsVersion}`;
@@ -165,32 +162,32 @@ Please, avoid using electron from 4.0.0 to 4.0.3`);
 
       const downloads = [];
 
-      log.info('Downloading prebuilds');
+      logger.info('Downloading prebuilds');
       for (let i = 0; i < platforms.length; i += 1) {
         const platform = platforms[i];
 
         const assetName = `greenworks-electron-v${abi}-${platform}-x64.node`;
         const asset = content.assets.find(a => a.name === assetName);
         if (!asset) {
-          log.error(`The target ${assetName} seems not to be available
+          logger.error(`The target ${assetName} seems not to be available
           currently. Build it yourself, or change Electron version.`);
           return false;
         }
         const res = asset.browser_download_url;
 
-        downloads.push(downloadFile(res, path.join(greenworksLibsDir, `greenworks-${platformsX[i]}64.node`)));
+        downloads.push(downloadFile(res, path.join(greenworksLibsDir, `greenworks-${platformsX[i]}64.node`), logger));
       }
 
       try {
         await Promise.all(downloads);
       } catch (e) {
-        log.error(e);
+        logger.error(e);
       }
 
       shelljs.rm('-rf', path.join(greenworksLibsDir, 'obj.target'));
     }
 
-    log.success('Initialization done!');
+    logger.success('Initialization done!');
     return true;
   },
 
@@ -202,6 +199,7 @@ Please, avoid using electron from 4.0.0 to 4.0.3`);
   },
 
   async run() {
-    log.info('Greenworks run automatically before the build step.');
+    const logger = this.Logger.normal('greenworks');
+    logger.info('Greenworks run automatically before the build step.');
   },
 };

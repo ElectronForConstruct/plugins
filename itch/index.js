@@ -3,9 +3,6 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const got = require('got');
-const Console = require('../../cli/src/utils/console');
-
-const logger = Console.normal('itch');
 
 const downloadFile = async (url, p) => new Promise((resolve) => {
   got.stream(url)
@@ -27,7 +24,7 @@ const extractZip = async (from, to) => new Promise((resolve, reject) => {
   });
 });
 
-const exe = async (command, args) => {
+const exe = async (command, args, logger) => {
   logger.log('Publishing to itch...');
   return new Promise((resolve) => {
     const npmstart = exec(command, args);
@@ -57,7 +54,7 @@ const exe = async (command, args) => {
   });
 };
 
-const publish = async (args, settings, out) => {
+const publish = async (args, settings, out, logger) => {
   const enquirer = require('enquirer');
   const shelljs = require('shelljs');
 
@@ -97,8 +94,8 @@ const publish = async (args, settings, out) => {
 
   shelljs.chmod('+x', butler);
 
-  await exe(`${butler} upgrade -j`);
-  await exe(`${butler} login`);
+  await exe(`${butler} upgrade -j`, logger);
+  await exe(`${butler} login`, logger);
 
 
   let defaultPrompt = '';
@@ -125,7 +122,7 @@ const publish = async (args, settings, out) => {
     return;
   }
 
-  await exe(`${butler} push ${outDir} ${project}:${answers.channel} -j`);
+  await exe(`${butler} push ${outDir} ${project}:${answers.channel} -j`, logger);
 };
 
 /**
@@ -139,14 +136,16 @@ module.exports = {
   },
 
   async onPostBuild(args, settings, out) {
+    const logger = this.Logger.normal('itch');
     try {
-      await publish(args, settings, out);
+      await publish(args, settings, out, logger);
     } catch (e) {
       logger.error('Publishing to itch failed!', e);
     }
   },
 
   async run() {
+    const logger = this.Logger.normal('itch');
     logger.info('This plugin run automatically after a build');
   },
 };

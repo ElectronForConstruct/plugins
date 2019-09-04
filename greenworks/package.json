@@ -4,5 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "got": "^9.6.0",
+    "modules-abi": "^0.3.3",
+    "node-abi": "^2.11.0",
+    "shelljs": "^0.8.3"
   }
 }
