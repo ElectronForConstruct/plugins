@@ -2,31 +2,6 @@ const recursive = require('recursive-readdir');
 const path      = require('path');
 const fs        = require('fs');
 
-const logger   = {
-        info(msg) {
-          console.log(msg);
-        },
-        log(msg) {
-          console.log(msg);
-        },
-      }// require('../../cli/src/utils/console').normal('minifier');
-;
-const iaLogger = {
-        info(msg) {
-          console.log(msg);
-        },
-        await(msg) {
-          console.log(msg);
-        },
-        error(msg) {
-          console.log(msg);
-        },
-        success(msg) {
-          console.log(msg);
-        },
-      }// require('../../cli/src/utils/console').interactive('minifier');
-;
-
 const recursiveReadDir = async dir => new Promise((resolve, reject) => {
   recursive(dir, (err, files) => {
     if (err) {
@@ -43,6 +18,7 @@ const recursiveReadDir = async dir => new Promise((resolve, reject) => {
  */
 const myMinify = async (settings, dir) => {
   const Terser = require('terser');
+  const iaLogger = this.Logger.interactive();
 
   const { ignore } = settings.minifier;
 
@@ -101,6 +77,7 @@ module.exports = {
   },
 
   async run() {
+    const logger = this.Logger.normal();
     logger.log('The minifier will run before the build step only on files that are going to be included in the final package.');
     logger.log('Please use "efc build" to run the minifier');
   },
